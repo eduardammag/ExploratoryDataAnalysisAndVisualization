@@ -1,0 +1,365 @@
+---
+title: "Show the Rigths Numbers"
+author: "Maria Eduarda Mesquita Magalhães"
+date: "2023-05-29"
+output: 
+  html_document:
+    number_sections: yes
+    highlight: tango
+    theme: readable
+    toc: yes
+    toc_float:
+      collapsed: yes
+      smmoth_scroll: no
+  pdf_document:
+    toc: yes
+---
+
+# Introdução
+Carregando as bibliotecas necessárias:
+
+```{r message=FALSE, warning=FALSE}
+library(ggplot2)
+library(gapminder)
+```
+
+Observe o gráfico abaixo:
+
+```{r message=FALSE, warning=FALSE}
+
+p <-ggplot(data=gapminder,mapping =aes(x=year, y=gdpPercap))
+p + geom_line()
+```
+
+Com esse código o ggplot não entende que os dados estão agrupados por país. Esse gráfico poderia ser útil se tivéssemos apenas um país na nossa base de dados. Vamos concertar isso:
+
+```{r message=FALSE, warning=FALSE}
+p <-ggplot(data=gapminder,mapping =aes(x=year, y=gdpPercap))
+p + geom_line(aes(group=country))
+```
+
+Usar o group do aesthetic é recomendado quando uma das informações necessárias não está incorporada as variáveis que estão sendo mapeadas. Porém, o gráfico continua extremamente poluído visualmente e, por isso vamos ''facetar'' os dados, ou seja, dividir o conjunto de dados em subconjuntos menores com base em uma ou mais variáveis categóricas para criar gráficos individuais para cada subconjunto. É uma técnica útil para visualizar diferentes aspectos dos dados de forma organizada e comparativa.
+
+# Facetando dados
+
+```{r message=FALSE, warning=FALSE}
+p <-ggplot(data=gapminder,mapping =aes(x=year, y=gdpPercap))
+p + geom_line(aes(group=country)) + facet_wrap(~continent)
+```
+
+- O facet_wrap() cria uma série de gráficos empilhados verticalmente ou horizontalmente. Cada gráfico representa uma combinação única das variáveis categóricas fornecidas. Ele não é um novo tipo de geometria, mas uma forma de organizar as já existentes. A sintaxe básica do facet_wrap() é a seguinte:
+
+> facet_wrap(~ variavel_de_agrupamento, nrow = numero_de_linhas, ncol = numero_de_colunas)
+
+Explicando os argumentos:
+- variavel_de_agrupamento: É a variável utilizada para definir os grupos nos quais os gráficos serão divididos. Pode ser uma variável categórica ou um fator.
+- nrow (opcional): Define o número de linhas, se não for especificado, o número de linhas será definido automaticamente com base no número de níveis da variável de agrupamento.
+- ncol (opcional): Define o número de colunas, se não for especificado, o número de colunas será definido analogamente ao nrow.
+
+OBS: Nós poderiamos facetar por país, mas aí não seria prático, pois 150 gráficos seriam gerados.
+
+Agora, vamos adicionar uma linha de tendência em destaque:
+
+```{r message=FALSE, warning=FALSE}
+p <-ggplot(data=gapminder,mapping =aes(x=year, y=gdpPercap))
+p + geom_line(color ="gray70", aes(group=country)) + 
+    geom_smooth(linewidth =1.1, method = "loess", se = FALSE)+ 
+    scale_y_log10(labels=scales::dollar)+     
+    facet_wrap(~continent, ncol=5) + 
+    labs(x ="Year", y= "GDP per capita", title = "GDP per capita on Five Continents")
+```
+
+
+Além do facet_wrap(), temos o facet_grid(). Ela também é uma função utilizada para criar gráficos facetados, assim como o facet_wrap(), mas com uma diferença fundamental na forma como os facetes são organizados. 
+
+> Enquanto o facet_wrap() organiza os facetes em uma única dimensão (uma única linha ou uma única coluna), o facet_grid() organiza os facetes em duas dimensões, criando uma grade (grid) de gráficos.
+
+A sintaxe básica do facet_grid() é a seguinte:
+> facet_grid(linhas ~ colunas)
+
+A escolha entre facet_wrap() e facet_grid() depende da forma como você deseja organizar seus facetes. Se você tiver uma variável de agrupamento que se encaixa melhor em uma única dimensão, o facet_wrap() é mais adequado. Por exemplo, se você tiver uma variável categórica com muitos níveis e deseja criar uma série de gráficos separados para cada nível, o facet_wrap() é uma boa opção.
+
+Por outro lado, se você tiver duas variáveis categóricas e deseja criar uma grade de gráficos que combine as categorias dessas duas variáveis, o facet_grid() é a escolha certa. Por exemplo, se você tiver uma variável categórica para o tipo de produto e outra variável categórica para a região geográfica, o facet_grid() pode ser usado para criar um gráfico para cada combinação de tipo de produto e região geográfica.
+
+Agora, mudaremos a base de dados para testarmos esse novo recurso:
+
+```{r message=FALSE, warning=FALSE}
+library(socviz)
+```
+
+```{r message=FALSE, warning=FALSE}
+p <- ggplot(data= gss_sm, mapping = aes(x=age, y=childs))
+p + geom_point(alpha=0.2) + geom_smooth() + facet_grid(sex~race)
+```
+
+O pacote "socviz" fornece uma série de funções e recursos para visualização de dados sociais.Lembre-se que o geom_smooth() adiciona uma curva suavizada ao gráfico(estimativa de tendência). Já o facet_grid(sex~race) divide o gráfico em painéis de acordo com as variáveis "sex" e "race", criando uma imagem que mostra diferentes subgráficos para cada combinação dessas variáveis.
+
+Os layouts multipainéis desse tipo são especialmente eficazes quando usados para resumir uma variação contínua (como em um gráfico de dispersão) em duas ou mais variáveis categóricas.Perceba que não estamos limitados a uma comparação bidirecional. Outras variáveis categóricas também podem ser adicionadas à fórmula (por exemplo, sexo ~ raça + grau) para gráficos multivias mais complexos. No entanto, as múltiplas dimensões de plotagens como essa rapidamente se tornarão muito complicadas se as variáveis tiverem mais do que algumas categorias cada.
+
+Para termos um sumário compacto de todas as variáveis dessa base de dados rodamos o seguinte código:
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(socviz)
+glimpse(gss_sm)
+```
+
+
+Gráfico sem especificações:
+
+```{r message=FALSE, warning=FALSE}
+p + stat_smooth()
+```
+
+
+# Transformando dados com geometria 
+
+No pacote ggplot2, as funções stat_function() e geom_function() são usadas em conjunto para adicionar uma função estatística ou geométrica, respectivamente.
+
+A função stat_function() é utilizada para adicionar uma função estatística a um gráfico. Ela permite que você especifique uma função matemática e, em seguida, calcula os valores correspondentes a essa função ao longo de um intervalo de valores do eixo x. Os pontos resultantes são conectados para formar uma linha ou curva que representa a função no gráfico.A sintaxe básica do stat_function() é a seguinte:
+
+> stat_function(fun = função, args = lista_de_argumentos, ...)
+
+- função: É a função matemática que você deseja plotar.
+- lista_de_argumentos (opcional): São os argumentos adicionais que você pode fornecer à função, se necessário.
+
+Por outro lado, a função geom_function() é utilizada para adicionar uma função geométrica a um gráfico. Ao contrário do stat_function(), a função geométrica é definida por meio de expressões estéticas e não realiza nenhum cálculo específico da função. Ela pode ser usada para adicionar formas geométricas personalizadas ou elementos gráficos ao gráfico. A sintaxe básica do geom_function() é a seguinte:
+
+> geom_function(fun = função, ...)
+
+- função: É a função geométrica que você deseja adicionar.
+
+Iniciando análise com gráfico de barras:
+
+```{r message=FALSE, warning=FALSE}
+p <- ggplot(data=gss_sm, mapping = aes(x=bigregion))
+p + geom_bar()
+```
+
+No código fornecido, o geom_bar() está relacionado à função stat_count(), que é o padrão utilizado pelo geom_bar().Quando você usa geom_bar() sem especificar explicitamente a função estatística, o ggplot2 usa automaticamente stat_count() como padrão. A função stat_count() conta o número de observações em cada categoria da variável mapeada (no caso, bigregion) e representa essas contagens como barras no gráfico.
+
+Se quisermos um gráfico de frequências relativas em vez de contagens, precisaremos obter a estatística prop. Quando o ggplot calcula a contagem ou a proporção, ele retorna variáveis temporárias que podemos mapear em nossos gráficos. A estatística é chamada ..prop.. em vez de prop. Para garantir que essas variáveis temporárias não sejam confundidas com outras com as quais estamos trabalhando, seus nomes começam e terminam com dois pontos. Isso ocorre porque talvez já tenhamos uma variável chamada count ou prop em nosso conjunto de dados. 
+
+Nesse caso, queremos que y use a proporção calculada, então dizemos aes(y=..prop..).
+
+```{r message=FALSE, warning=FALSE}
+p <- ggplot(data=gss_sm, mapping = aes(x=bigregion))
+p + geom_bar(mapping = aes(y=..prop..))
+```
+
+No código acima, temos um código de barras com proporções. O geom_bar() está usando o stat_count() como função estatística padrão. O stat_count() realiza a contagem de observações em cada categoria da variável mapeada (bigregion) e exibe as alturas das barras correspondentes a essas contagens.
+
+No entanto, ao adicionar mapping = aes(y = ..prop..) no geom_bar(), estamos especificando um mapeamento estético adicional. A sintaxe ..prop.. é usada para representar a proporção normalizada das contagens das barras. Nesse caso, todas as barras terão a mesma altura, igual a 1, porque a proporção normalizada de cada categoria é 1 (100%).
+
+```{r message=FALSE, warning=FALSE}
+p <- ggplot(data=gss_sm, mapping = aes(x=bigregion))
+p + geom_bar(mapping = aes(y=..prop.., group=1))
+```
+
+Agora, temos um gráfico de barras com as proporções corrigidas. Para fazer essa correção, temos que dizer ao ggplot para ignorar as categorias em x ao calcular o denominador da proporção e, em vez disso, usar as observações do número total.Isso é feito especificando o grupo 1 dentro da chamada aes().
+
+Agora vamos analisar dados sobre religião:
+
+```{r message=FALSE, warning=FALSE}
+table(gss_sm$religion)
+```
+
+```{r message=FALSE, warning=FALSE}
+p <- ggplot(data=gss_sm, mapping = aes(x=religion, color = religion))
+p + geom_bar()
+```
+
+- fill: define a cor de preenchimento de uma forma geométrica, como barras, áreas ou caixas. Quando você usa fill, a forma é preenchida com a cor especificada. 
+
+- color: define a cor do contorno De uma forma geométrica. Ao usar color, a forma será contornada com a cor especificada. 
+
+```{r message=FALSE, warning=FALSE}
+p <- ggplot(data=gss_sm, mapping = aes(x=religion, fill = religion))
+p + geom_bar() + guides(fill=FALSE)
+```
+
+
+No código acima, guides(fill=FALSE) remove a legenda de preenchimento (fill) do gráfico. Ao definir fill=FALSE, a legenda é desativada e não será exibida. Com isso, mapeamos duas estéticas para uma mesma variável: x e fill foram mapeadas para religião.
+
+OBS: A função guides()é usada para personalizar as legendas de um gráfico. Ela permite controlar a aparência e o comportamento das legendas associadas aos mapeamentos estéticos do gráfico. Exemplos de como ela pode ser utilizada:
+
+- guides(fill = guide_legend(title = "Legenda")):personaliza a legenda de preenchimento (fill) do gráfico, definindo um título como "Legenda".
+
+- guides(color = guide_legend(override.aes = list(size = 2))): torna a legenda de cor personalizada, aumentando o tamanho dos símbolos da legenda.
+
+- guides(fill = FALSE): Essa linha remove a legenda de preenchimento (fill) do gráfico, desativando-a completamente.
+
+- guides(shape = guide_legend(override.aes = list(pch = c(16, 17, 18)))): aqui, a legenda de forma (shape) é personalizada para exibir símbolos diferentes para cada categoria, usando os valores numéricos correspondentes a pch (16, 17, 18) para definir os símbolos.
+
+# Gráficos de frequência
+
+Um uso mais apropriado do geom_bar() é ao classificar duas variáveis categóricas que é o equivalente a um gráfico de tabela de frequências ou proporções.Entretanto, muitas vezes essa não é a maneira mais transparente de fazer esses tipos de tabelas.
+
+Vamos analisar a preferência religiosa por região do censo. 
+
+```{r message=FALSE, warning=FALSE}
+P <- ggplot(data = gss_sm, mapping=aes(x=bigregion, fill=religion))
+p+geom_bar()
+```
+
+Embora a posição relativa das categorias inferiores seja bastante clara(devido ao fato de todas estarem alinhadas no eixox x), as outras posições relativas são mais difíceis de avaliar. Para resolver isso, uma opção é definir o argumento de posição como "fill"(perceba que isso difere da estética fill).
+
+```{r message=FALSE, warning=FALSE}
+p <-ggplot(data=gss_sm, mapping = aes(x=bigregion, fill=religion))
+p+geom_bar(position="fill")
+```
+
+Agora com as barras com o mesmo tamanho, a comparação entre os grupos é facilitada, mas a há uma perda da capacidade de análise em relação ao total.
+
+E se quiséssemos mostrar a proporção ou porcentagem de religiões dentro das regiões do país, mas em vez de empilhar as barras, quiséssemos barras separadas?
+
+```{r message=FALSE, warning=FALSE}
+p <-ggplot(data=gss_sm, mapping = aes(x=bigregion, fill=religion))
+p+geom_bar(position="dodge", mapping=aes(y=..prop..))
+```
+
+Como primeira tentativa, podemos usar position = "dodge" para fazer as barras dentro de cada região do país aparecerem lado a lado. No entanto, se fizermos dessa maneira, vemos que o ggplot coloca as barras lado a lado como pretendido, mas altera o eixo y de volta para uma contagem de casos dentro de cada categoria, em vez de nos mostrar uma proporção.
+
+O resultado é certamente colorido, mas não é o que queríamos. Claramente, há um problema com o agrupamento. Quando queríamos apenas as proporções gerais para uma variável, mapeamos group = 1 para dizer ao ggplot para calcular as proporções em relação ao N geral. Nesse caso, nossa variável de agrupamento é religião, então podemos tentar mapear isso para o grupo estética.
+
+```{r message=FALSE, warning=FALSE}
+p <-ggplot(data=gss_sm, mapping = aes(x=bigregion, fill=religion))
+p+geom_bar(position="dodge", mapping=aes(y=..prop.., group=religion))
+```
+
+Isso nos dá um gráfico de barras onde os valores da religião são divididos entre as regiões, com uma proporção exibida no eixo y. Se você inspecionar as barras na figura, verá que elas não somam um em cada região. Em vez disso, as barras para qualquer religião em particular somam um entre as regiões.
+
+Acontece que a coisa mais fácil a fazer é parar de tentar forçar geom_bar() a fazer todo o trabalho em uma única etapa. Em vez disso, podemos pedir o ggplot para nos dar um gráfico de barras proporcional de afiliação religiosa e, em seguida, facetá-lo por região. As proporções da figura serão calculadas dentro de cada painel, que é a divisão desejada. Isso tem a vantagem adicional de não produzir muitas barras dentro de cada categoria.
+
+```{r message=FALSE, warning=FALSE}
+p <-ggplot(data=gss_sm, mapping = aes(x=religion))
+p + geom_bar(position = "dodge", mapping = aes(y=..prop.., group= bigregion)) + facet_wrap(~bigregion, ncol=1)
+```
+
+# Histogramas e Gráficos de Densidade
+
+O ggplot vem com um conjunto de dados, midwest, contendo informações sobre condados em vários estados do centro-oeste dos Estados Unidos. Os condados variam em tamanho, então podemos fazer um histograma mostrando a distribuição de suas áreas geográficas. Como estamos resumindo uma variável contínua usando uma série de barras, precisamos dividir as observações em grupos(bins).
+
+```{r message=FALSE, warning=FALSE}
+p <-ggplot(data= midwest, mapping=aes(x=area))
+p + geom_histogram()
+
+```
+
+Os "bins" são as divisões ou intervalos nos quais os dados são agrupados para construir o histograma. Cada barra vertical no histograma representa a contagem de observações dentro de um determinado bin.
+
+A escolha adequada do número e tamanho dos bins é importante, pois se o número de bins for muito pequeno, o histograma pode não capturar adequadamente a estrutura dos dados, apresentando uma visão muito simplificada. Por outro lado, se o número de bins for muito grande, o histograma pode se tornar excessivamente detalhado, tornando difícil identificar padrões ou tendências.
+
+```{r message=FALSE, warning=FALSE}
+p <- ggplot(data=midwest, mapping = aes(x=area))
+p+geom_histogram(bins=10)
+```
+
+Acima, temos dois histogramas de mesma variável usando diferentes números de bins(o primeiro 30 - padrão, e o segundo 10 -arbitrário).
+
+```{r message=FALSE, warning=FALSE}
+oh_wi <- c("OH","WI")
+p<- ggplot(data=subset(midwest, subset=state %in% oh_wi),mapping= aes(x=percollege, fill=state))
+p+geom_histogram(alpha=0.4, bins=20)
+
+```
+
+O código acima objetiva criar um histograma com base em um conjunto de dados chamado "midwest". A primeira linha cria um vetor chamado "oh_wi" contendo os valores "OH" e "WI". Esses valores representam os estados de Ohio e Wisconsin, respectivamente.
+
+A função subset() é usada para selecionar apenas as linhas do conjunto de dados "midwest" em que a coluna "state" contém os valores presentes no vetor "oh_wi". Em seguida, é definido o mapeamento estético usando a função aes(), em que a variável "percollege" é mapeada no eixo x e a variável "state" é mapeada para a cor de preenchimento das barras do histograma.
+
+A função geom_histogram() cria o histograma e os argumentos alpha = 0.4 definem a transparência das barras do histograma como 0.4, e bins = 20 define o número de bins (intervalos) utilizados no histograma como 20.
+
+O operador %in% é uma maneira conveniente de filtrar mais de um termo em uma variável ao usar subset(). 
+
+```{r message=FALSE, warning=FALSE}
+p <- ggplot(data=midwest, mapping=aes(x=area))
+p+geom_density()
+
+```
+
+
+A função geom_density() é usada para criar uma estimativa de densidade suavizada de uma variável contínua. Ela é útil para visualizar a forma geral da distribuição dos dados. Ao contrário do histograma, que divide os dados em bins e conta a frequência em cada bin, o gráfico de densidade estima a densidade de probabilidade subjacente aos dados contínuos. A densidade é uma função contínua que representa a probabilidade de uma observação cair em um determinado intervalo.
+
+Quando você utiliza geom_density(), é necessário especificar a variável contínua que deseja estimar a densidade por meio do mapeamento estético. Por exemplo:
+
+A função geom_density() usa um algoritmo de estimativa de densidade kernel para suavizar os dados e criar a curva de densidade. O formato da curva suavizada é influenciado por um parâmetro chamado "bandwidth" (largura de banda). O valor padrão do "bandwidth" é calculado automaticamente com base nos dados, mas você também pode especificá-lo manualmente, se desejar.
+
+```{r message=FALSE, warning=FALSE}
+p <- ggplot(data=midwest, mapping=aes(x=area))
+p+geom_line(stat="density")
+
+```
+
+
+Os dois últimos códigosproduzem resultados visualmente semelhantes porque ambos estão criando uma representação gráfica da estimativa suavizada da densidade para a variável "area". No entanto, há uma diferença conceitual entre as duas camadas geométricas.
+
+> A função geom_density() cria uma curva de densidade suavizada usando um algoritmo de estimativa de densidade kernel. Ela é projetada especificamente para criar uma representação gráfica de densidade suavizada. A área sob a curva de densidade representa a probabilidade de encontrar um determinado valor da variável contínua. A função geom_density() é mais adequada quando você está interessado em visualizar a distribuição geral dos dados.
+
+> A função geom_line(stat = "density"), por outro lado, cria uma linha que conecta os pontos de densidade estimados. Ela utiliza os mesmos cálculos de densidade que geom_density(), mas a representação gráfica é diferente. A linha de densidade conecta os pontos de densidade estimados, fornecendo uma visualização mais simplificada da densidade suavizada. A função geom_line(stat = "density") é útil quando você deseja uma representação mais simplificada da densidade.
+
+Portanto, embora visualmente os resultados sejam semelhantes, a diferença está na interpretação e no propósito das camadas geométricas. Se você deseja uma curva suavizada e detalhada da densidade, use geom_density(). Se você prefere uma representação mais simplificada usando uma linha conectando os pontos de densidade, use geom_line(stat = "density").
+
+No entanto, é importante observar que a diferença pode ser mais evidente em conjuntos de dados com distribuições mais complexas ou com maior variação na densidade. Em conjuntos de dados mais simples, a diferença entre as duas abordagens pode ser menos perceptível.
+
+```{r message=FALSE, warning=FALSE}
+p <- ggplot(data=midwest, mapping=aes(x=area, fill=state, color=state))
+p+geom_density(alpha=0.3)
+```
+
+
+Apesar de visualmente atraentes, esse gráficos são difíceis de ler.
+
+```{r message=FALSE, warning=FALSE}
+p <- ggplot(data= subset(midwest, subset=state %in% oh_wi), mapping = aes(x=area, fill=state, color=state))
+p+geom_density(alpha=0.3, mapping = (aes(y=..scaled..)))
+```
+
+
+Explicando o código: 
+
+A função subset() é usada para selecionar apenas as linhas do conjunto de dados "midwest" em que a coluna "state" contém os valores presentes no vetor "oh_wi". Em seguida, é definido o mapeamento estético usando a função aes(). A variável "area" é mapeada no eixo x, a variável "state" é mapeada para a cor de preenchimento e também para a cor da linha.
+
+A função geom_density() cria a estimativa suavizada da densidade usando os dados e os mapeamentos estéticos definidos anteriormente. O argumento alpha = 0.3 define a transparência da linha de densidade. Além disso, é usado o argumento mapping dentro da função geom_density() para especificar um novo mapeamento estético. Nesse caso, a variável especial ..scaled.. é mapeada no eixo y, o que faz com que a densidade seja escalada para que todas as densidades tenham uma mesma altura máxima(o que facilita a comparação entre curvas).
+
+# Evitando transformações quando necessário 
+
+```{r message=FALSE, warning=FALSE}
+titanic
+```
+
+
+Como agora estamos trabalhando com valores percentuais em uma tabela de resumo, não precisamos mais do ggplot para contar os valores para nós. Podemos dizer para o geom_bar() não fazer nenhuma modificação na variável antes de plotá-la. Para isso, adicionamos o stat="identity" na chamada da função.Nós também podemos mudar a legenda para o topo do gráfico. Veja:
+
+```{r message=FALSE, warning=FALSE}
+p<-ggplot(data=titanic, mapping = aes(x=fate, y = percent, fill=sex))
+p+geom_bar(position="dodge", stat="identity") + theme(legend.position = "top")
+
+```
+
+
+O argumento de posição em geom_bar() e geom_col() também pode receber o valor de "identidade". Assim como stat = "identity" significa "não faça nenhum cálculo resumido", position = "identity" significa "apenas plote os valores conforme dados". Isso nos permite fazer coisas como plotar um fluxo de valores positivos e negativos em um gráfico de barras. Esse tipo de gráfico é uma alternativa para um gráfico de linha e é frequentemente visto em configurações de políticas públicas onde as mudanças relativas a algum nível de limite ou linha de base são de interesse. 
+
+```{r message=FALSE, warning=FALSE}
+oecd_sum
+```
+
+
+Por exemplo, a tabela oecd.sum em socviz contém informações sobre a expectativa média de vida ao nascer nos Estados Unidos e em outros países da OCDE.A outra coluna é a expectativa média de vida em um determinado ano para os países da OCDE, excluindo os Estados Unidos. A coluna usa é a expectativa de vida dos EUA, diff é a diferença entre os dois valores e hi_lo indica se o valor dos EUA para aquele ano estava acima ou abaixo da média da OCDE. Traçaremos a diferença ao longo do tempo e usaremos a variável hi-lo para colorir as colunas do gráfico.
+
+```{r message=FALSE, warning=FALSE}
+p <-ggplot(data=oecd_sum, mapping=aes(x=year, y= diff, fill=hi_lo))
+p + geom_col() + guides(fill=FALSE) + labs(x=NULL, y="Difference in years", title= "The US Life Expectancy Gap", subtitle = "Difference between US and OECD average life expectancies, 1960-2015", caption = "Data: OECD. After a chart by Christopher Ingraham, Washington Post, December 27th 2017.")
+```
+
+
+Assim como no enredo titânico, a ação padrão de geom_col() é definir tanto a estatística quanto a posição como "identidade". Para obter o mesmo efeito com geom.bar(), precisaríamos dizer geom.bar(position = "identity"). Como antes, a instrução guides (All = FALSE) no final informa ao ggplot para descartar a legenda desnecessária que, de outra forma, seria gerada automaticamente para acompanhar o mapeamento de preenchimento.
+
+# Gráfico autoral
+
+```{r message=FALSE, warning=FALSE}
+p <- ggplot(data = oecd_sum, mapping = aes(x = year, y = diff))
+p + geom_point(alpha = 0.4) + facet_wrap(~ hi_lo) +
+    geom_smooth(method = "loess", color = "purple")
+
+```

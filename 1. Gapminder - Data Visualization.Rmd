@@ -1,0 +1,227 @@
+---
+title: "Gapminder - Data Visualization"
+author: "Maria Eduarda Mesquita Magalhães"
+date: "2023-05-07"
+output: 
+  html_document:
+    number_sections: yes
+    highlight: tango
+    theme: journal
+    toc: yes
+    toc_float:
+      collapsed: yes
+      smmoth_scroll: no
+  pdf_document:
+    toc: yes
+---
+# Reproduzindo os gráficos
+
+- Informando as bibliotecas necessárias
+```{r}
+library(ggplot2)
+library(gapminder)
+```
+- Visualizando um resumo dos dados
+```{r}
+gapminder
+```
+- Atribuindo variável
+```{r}
+p<-ggplot(gapminder)
+```
+- Definindo as variáveis dos eixos 
+```{r message=FALSE, warning=FALSE}
+p<-ggplot(gapminder,mapping = aes(gdpPercap,lifeExp))
+```
+O mapping é uma função para linkar as variáveis, mas ele não diz nada sobre onde achar elas.
+Ela plota o esqueleto do gráfico sem geometrias.
+
+- Adicionando os pontos 
+```{r message=FALSE, warning=FALSE}
+p+geom_point()
+```
+
+- Testando diversos tipos de gráficos
+```{r message=FALSE, warning=FALSE}
+p+geom_area()
+p+geom_density2d()
+p+geom_polygon()
+```
+
+- Inspecionando a estrutura de um objeto
+```{r message=FALSE, warning=FALSE}
+str(p)
+```
+Isso é feito para verificar se as variáveis estão no formato correto ou para identificar problemas de incompatibilidade.
+
+- Linha suavizada com sombreado
+
+```{r message=FALSE, warning=FALSE}
+p + geom_smooth()
+```
+
+- Pontos e sombra
+
+```{r message=FALSE, warning=FALSE}
+p+geom_point() +geom_smooth()
+```
+
+- Sombra e pontos
+
+```{r message=FALSE, warning=FALSE}
+p+ geom_smooth()+geom_point()
+```
+
+- Colocando linha de regressão 
+
+```{r message=FALSE, warning=FALSE}
+p+geom_point() +geom_smooth(method="lm")
+p+geom_point() +geom_smooth(method="gam")
+
+```
+
+Método lm = linear model
+Método gam = GAM (Generalized Additive Model) para adicionar linha suave.
+
+- Ajustando com escala logarítmica o eixo y
+
+```{r message=FALSE, warning=FALSE}
+p+geom_point() + geom_smooth(method="lm")+scale_x_log10()
+```
+
+- Escala em dólar 
+```{r message=FALSE, warning=FALSE}
+
+library(scales)
+p+geom_point() + geom_smooth(method="lm")+scale_x_log10(labels=scales::dollar)
+
+```
+
+- Usando separadores de milhares e decimais
+```{r message=FALSE, warning=FALSE}
+p+geom_point() + geom_smooth(method="lm")+scale_x_log10(labels=scales::comma)
+
+```
+
+- Adicionando cor
+
+```{r message=FALSE, warning=FALSE}
+p <- ggplot(data=gapminder, mapping=aes(gdpPercap, lifeExp, color=continent))
+```
+
+Aqui defininmos que a cor se referirá à variável continente, mas ele ainda não colore os pontos. 
+O código seguinte colorirá.
+
+```{r message=FALSE, warning=FALSE}
+p <- ggplot(data=gapminder, mapping=aes(gdpPercap, lifeExp, 
+      color="purple"))
+p +geom_point() +geom_smooth(method = "loess") + scale_x_log10()
+
+
+```
+
+No código acima, a cor dos pontos e da linha suave é definida como "purple" pelo argumento color na função aes(). No entanto, a cor dos pontos e da linha suave no gráfico gerado não é roxa, mas sim vermelha.
+
+Isso acontece porque a função aes() é usada , unicamente, para mapear os atributos visuais do gráfico e não define a cor exata a ser usada. A cor é definida posteriormente, através de funções como scale_color_*().
+
+Como no código apresentado não há nenhuma chamada explícita à função scale_color_*(), o ggplot2 utiliza a paleta padrão, que é a paleta "RdYlBu" (vermelho-amarelo-azul). Por isso, a cor dos pontos e da linha suave é vermelha em vez de roxa.
+
+```{r message=FALSE, warning=FALSE}
+p+ geom_point(color="purple") + geom_smooth(method="loess") + scale_x_log10()
+```
+
+- Testando recursos
+
+```{r message=FALSE, warning=FALSE}
+p +geom_point(alpha=0.3) + geom_smooth(color="orange", se=FALSE, size=8, method="lm") + scale_x_log10()
+```
+
+O argumento alpha=0.3 é usado para definir a transparência dos pontos (essa escala vai de 0 a 1).
+Uma linha de tendência ao gráfico é adicionada usando a função geom_smooth(). A linha de tendência é uma regressão linear (método="lm") que é exibida na cor laranja (color="orange"). O argumento se=FALSE é usado para desativar a exibição do intervalo de confiança e size=8 é usado para definir a espessura da linha.
+
+- Colocando título e subtítulo
+
+```{r message=FALSE, warning=FALSE}
+p + geom_point(alpha=0.3) + geom_smooth(method="gam") + scale_x_log10(labels= scales::dollar) +labs(x="GDP per Capita",y="Life expectancy in Years",
+                      title= "Economic Growth and Life Expectancy",
+                      subtitle="Data points are country-years", 
+                      caption = "Source: Gapminder.")
+
+```
+
+- Mapeando dados por cor
+
+```{r message=FALSE, warning=FALSE}
+p <- ggplot(data=gapminder, mapping=aes(gdpPercap, lifeExp, 
+      color=continent))
+p + geom_point() + geom_smooth(method="loess") + scale_x_log10()
+```
+
+- Corrigindo a cor das barras de erros
+
+```{r message=FALSE, warning=FALSE}
+p<- ggplot(data=gapminder, mapping= aes(x=gdpPercap, lifeExp, color = continent, fill= continent))
+p + geom_point()+geom_smooth(method="loess") + scale_x_log10()
+
+```
+
+A cor da margem de erro é controlada pelo aesthetic.
+
+- Colocando apenas uma margem de erro sombreada
+
+```{r message=TRUE, warning=FALSE}
+p <- ggplot(data=gapminder, mapping = aes(gdpPercap, lifeExp))
+p + geom_point(mapping=aes(color=continent)) +
+  geom_smooth(method="loess") + scale_x_log10()
+```
+
+- Mapeando uma variável contínua com cor
+
+```{r}
+p <- ggplot(data=gapminder, mapping = aes(gdpPercap, lifeExp))
+p + geom_point(mapping=aes(color=log(pop)))+scale_x_log10()
+```
+
+
+# Gráficos autorais 
+
+##
+
+```{r message=FALSE, warning=FALSE}
+library(ggplot2)
+q <- ggplot(data=gapminder, mapping = aes(year,pop))
+
+q + geom_point(alpha=0.9, mapping=aes(color=continent)) + geom_smooth(method="lm") + labs(x="Anos",y="População Mundial",
+                      title= "População mundial ao longo dos anos",
+                      subtitle= "Análise gráfica" , 
+                      caption = "Source: Gapminder.")
+
+
+```
+
+##
+
+```{r message=FALSE, warning=FALSE}
+
+library(ggplot2)
+q <- ggplot(data=gapminder, mapping = aes(year,lifeExp))
+
+q + geom_point(alpha=0.9, mapping=aes(color=continent)) +   geom_smooth(method="gam") + labs(x="Anos",y="Idade atingida",
+                      title= "Expectativa de vida ao longo dos anos",
+                      subtitle="Uma análise prática",
+                    caption = "Source: Gapminder.")
+
+```
+
+
+##
+
+```{r message=FALSE, warning=FALSE}
+
+ggplot(data=gapminder, aes(x = gdpPercap, y = lifeExp)) + 
+  geom_point(size=1,alpha=0.9, mapping=aes(color=continent)) +
+  geom_smooth(method = lm, se = TRUE, color = "#009E73") +
+  labs(title = "Expectativa de vida em função do PIB per capita",
+       x = "PIB per capita",
+       y = "Expectativa de vida", caption = "Source: Gapminder.") 
+```

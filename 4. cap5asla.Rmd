@@ -1,0 +1,419 @@
+---
+title: "Graph Tables, Add Labels, Make Notes"
+author: "Maria Eduarda Mesquita Magalhães"
+date: "2023-05-29"
+output: 
+  html_document:
+    number_sections: yes
+    highlight: kate
+    theme: readable
+    toc: yes
+    toc_float:
+      collapsed: yes
+      smmoth_scroll: no
+  pdf_document:
+    toc: yes
+---
+# Introdução
+Vamos carregar as bibliotecas necessárias para o estudo desse capítulo.
+```{r}
+library(ggplot2)
+library(socviz)
+library(dplyr)
+```
+
+Algumas definições importantes: 
+- Biblioteca dplyr:fornece uma interface consistente e intuitiva para realizar operações comuns de manipulação de dados, como filtragem, seleção de colunas, ordenação, agrupamento, agregação e criação de variáveis derivada e foi desenvolvida para facilitar a manipulação e transformação de conjuntos de dados (data frames). A principal vantagem do dplyr é sua sintaxe concisa e legível, que permite escrever código mais eficiente e expressivo. Em vez de usar loops ou estruturas de controle complexas, você pode encadear uma sequência de verbos (funções) para realizar transformações nos dados. Isso torna o código mais fácil de escrever, entender e dar manutenção.
+
+- Operador pipe(%>%): é usado para encadear múltiplas operações em uma única sequência. Ele permite que você aplique uma série de transformações em um conjunto de dados sem a necessidade de criar variáveis intermediárias ou escrever várias linhas de código. Ele facilita a leitura e a compreensão do código, pois você pode escrever as transformações em uma ordem lógica, da esquerda para a direita. Cada resultado intermediário é passado automaticamente como o primeiro argumento da próxima função na sequência. Isso elimina a necessidade de atribuir e nomear variáveis temporárias, tornando o código mais conciso e legível.
+
+```{r}
+rel_by_region <- gss_sm %>%
+  group_by(bigregion, religion) %>%
+  summarize(N=n()) %>%
+  mutate(freq=N/sum(N), pct=round((freq*100),0))
+```
+
+O código fornecido realiza uma sequência de operações no conjunto de dados gss_sm.
+- group_by(bigregion, religion): Esta linha agrupa os dados pela macrorregião e religião, ou seja, cria grupos com base nesses dois campos. Isso significa que os cálculos subsequentes serão aplicados a cada combinação única desses dois grupos.
+
+- summarize(N=n()): A função summarize() calcula uma nova variável chamada N, que conta o número de observações em cada grupo. A notação N = n() indica que estamos contando o número de observações em cada grupo.
+
+- mutate(freq=N/sum(N), pct=round((freq*100),0)): A função mutate() cria duas novas variáveis, freq e pct. A variável freq é calculada dividindo o número de observações (N) em cada grupo pelo total de observações em todos os grupos (sum(N)). A variável pct é obtida multiplicando freq por 100 e arredondando o resultado para o número inteiro mais próximo.
+
+No final dessa sequência, o objeto rel_by_region conterá o resultado da agregação dos dados. Ele terá as colunas bigregion, religion, N, freq e pct.
+
+```{r}
+rel_by_region
+```
+
+group_by(bigregion): Essa parte do código agrupa os dados por uma variável chamada "bigregion". Isso significa que as operações subsequentes serão aplicadas separadamente para cada grupo de "bigregion".
+
+%>%: Mais uma vez, o operador pipe é usado para encadear outra operação.
+
+summarize(total=sum(pct)): Essa parte do código realiza uma sumarização dos dados dentro de cada grupo. A função summarize() é usada para calcular estatísticas agregadas ou resumidas. Nesse caso, a função sum() é aplicada à coluna "pct" para calcular a soma dos valores dentro de cada grupo. O resultado é atribuído a uma nova coluna chamada "total".
+
+Portanto, a linha de código em questão agrupa o conjunto de dados "rel_by_region" pela variável "bigregion" e, em seguida, calcula a soma dos valores na coluna "pct" para cada grupo. O resultado final será um novo conjunto de dados que mostra a soma total para cada "bigregion" presente no conjunto de dados original.
+
+```{r}
+rel_by_region %>% group_by(bigregion) %>% summarize(total=sum(pct))
+```
+
+Agora, vamos testar outras possibilidades:
+
+```{r}
+p <- ggplot(rel_by_region, aes(x=bigregion, y=pct, fill=religion))
+p+geom_col(position="dodge2") + labs(x="Region", y ="Percent", fill="Religion") +theme(legend.position="top")
+```
+Usa dodge2 ao invés de dodge coloca as barras uma do lado da outra. Vamos deixar o gráfico visualmente mais agradável e fácil de ler sumarizando tabelas de dados sem ter que escrever códigos gigantes ou usandos muitas funções geométricas.
+
+```{r}
+p <- ggplot(rel_by_region, aes(x=religion, y=pct, fill=religion))
+p+geom_col(position="dodge2") + labs(x="NULL", y ="Percent", fill="Religion") + guides(fill=FALSE) + coord_flip()+ facet_grid(~bigregion)
+
+```
+
+p <- ggplot(rel_by_region, aes(x=religion, y=pct, fill=religion))
+Nesta linha, está sendo criado um objeto p que representa o gráfico base. Está sendo utilizado o conjunto de dados rel_by_region como fonte dos dados. A estética (aesthetics) do gráfico é definida através da função aes(), onde x=religion define a variável a ser usada no eixo x, y=pct define a variável a ser usada no eixo y e fill=religion define a variável a ser usada para preencher as colunas, baseada na variável religion.
+
+p + geom_col(position="dodge2")
+Aqui, está sendo adicionada uma camada (layer) ao objeto p. A função geom_col() é usada para adicionar as colunas ao gráfico. O argumento position="dodge2" define que as colunas serão agrupadas (dodged) em relação à variável religion. Isso significa que as colunas de cada nível da variável religion serão posicionadas lado a lado.
+
++ labs(x="NULL", y ="Percent", fill="Religion")
+Nesta linha, estão sendo adicionados rótulos aos eixos x, y e à legenda de preenchimento (fill) do gráfico. x="NULL" define que não será exibido um rótulo para o eixo x. y="Percent" define o rótulo para o eixo y como "Percent" e fill="Religion" define o rótulo da legenda de preenchimento como "Religion".
+
++ guides(fill=FALSE)
+Aqui, é ajustado o guia (guide) relacionado ao preenchimento (fill) das colunas. fill=FALSE define que o guia não será exibido. Isso significa que a legenda de preenchimento será removida do gráfico.
+
++ coord_flip()
+A função coord_flip() é usada para inverter a orientação dos eixos x e y. Isso resulta em um gráfico de colunas horizontais em vez de verticais.
+
++ facet_grid(~bigregion)
+Por fim, a função facet_grid() é usada para criar facetas (subgráficos) com base na variável bigregion. O argumento ~bigregion define que as facetas serão criadas com base nos diferentes níveis da variável bigregion.
+
+No geral, o código está criando um gráfico de colunas agrupadas, onde cada grupo de colunas representa uma categoria da variável religion. O gráfico é dividido em facetas com base na variável bigregion, e as colunas são preenchidas com cores diferentes de acordo com a categoria da variável religion. A legenda de preenchimento é removida, e a orientação dos eixos é invertida para colunas horizontais.
+
+# Variáveis contínuas por grupo ou categorias
+
+Vamos mudar a base de dados para novas análises:
+```{r}
+organdata %>% select(1:6) %>% sample_n(size=10)
+```
+
+Testando ingenuamente tipos de gráficos:
+```{r}
+p<-ggplot(data=organdata, mapping=aes(x=year, y=donors))
+p+geom_point()
+```
+
+Agrupando por país (assim como fizemos no gapminder) e facetando os gráficos por país também, temos:
+
+```{r}
+p<- ggplot(data=organdata, mapping = aes(x=year, y=donors))
+p+geom_line(aes(group=country))+ facet_wrap(~country)
+```
+
+Nós podemos usar a função geométrica box_plot para ter uma noção da variação de doações por ano dos países;
+
+```{r}
+p<-ggplot(data=organdata, mapping=aes(x=country, y=donors))
+p+geom_boxplot()
+```
+
+Os nomes ficam prensados no eixo x, para resolver isso, vamos reverter as coordenadas:
+
+```{r}
+p<-ggplot(data=organdata, mapping=aes(x=country, y=donors))
+p+geom_boxplot()+coord_flip()
+```
+
+Agora está mais legível, mas ainda não ideal. Vamos colocar os dados em ordem de grandeza:
+
+```{r}
+p <-ggplot(data=organdata, mapping = aes(x=reorder(country, donors, na.rm=TRUE), y =donors))
+p + geom_boxplot() +labs(x=NULL) + coord_flip()
+```
+
+Explicação:
+p <- ggplot(data=organdata, mapping = aes(x=reorder(country, donors, na.rm=TRUE), y =donors))
+
+Nesta linha, é criado um objeto p que representa o gráfico base. O argumento data=organdata define o conjunto de dados a ser utilizado como fonte dos dados. O argumento mapping especifica a estética (aesthetics) do gráfico. A função aes() é usada para definir as variáveis mapeadas aos eixos x e y do gráfico. 
+
+x=reorder(country, donors, na.rm=TRUE) indica que a variável country será mapeada para o eixo x, reordenada com base na variável donors e removendo possíveis valores ausentes (na.rm=TRUE). y=donors define que a variável donors será mapeada para o eixo y.
+
+p + geom_boxplot()
+Nesta linha, uma camada (layer) de boxplot é adicionada ao objeto p utilizando a função geom_boxplot(). Isso cria os retângulos que representam os quartis, mediana e possíveis outliers dos dados.
+
++ labs(x=NULL)
+Aqui, é adicionado um rótulo nulo para o eixo x do gráfico, utilizando a função labs() e definindo x=NULL. Isso significa que o rótulo do eixo x será removido do gráfico.
+
++ coord_flip()
+A função coord_flip() é utilizada para inverter a orientação dos eixos x e y. Isso resulta em um gráfico de boxplot horizontal, com os retângulos dispostos horizontalmente.
+
+Em resumo, o código cria um gráfico de boxplot em que os países são representados no eixo x, reordenados de acordo com a quantidade de doadores (variável donors). O eixo y representa o número de doadores. O gráfico é orientado horizontalmente, e não há rótulo para o eixo x. Isso permite visualizar a distribuição dos doadores em diferentes países e identificar possíveis discrepâncias ou outliers.
+
+Agora, vamos colorir os box plots.
+```{r}
+p <- ggplot(data=organdata, mapping = aes(x=reorder(country, donors, na.rm=TRUE), y=donors, fill=world))
+
+p+geom_boxplot()+labs(x=NULL) + coord_flip() +theme(legend.position="top")
+```
+
+Enfim, temos um gráfico mais legível e que atrae mais o leitor devido a uma mais eficiente visualização.
+
+Se o número de observações não for muito grande para cada categoria, nós podemos pular os box plots e mostrarmos os pontos individualmente. Desse jeito:
+
+```{r}
+p <- ggplot(data=organdata, mapping = aes(x=reorder(country, donors, na.rm=TRUE), y=donors, color=world))
+
+p+geom_point()+labs(x=NULL) + coord_flip() +theme(legend.position="top")
+```
+
+Quando usamos geom_point() assim, há alguma sobreposição de observações. Nesses casos, pode ser útil perturbar um pouco os dados para ter uma noção melhor da variação entre as observações. Usamos geom_jitter() para fazer isso. Este geom mas desloca aleatoriamente cada observação em uma pequena quantidade.
+
+
+```{r}
+p <- ggplot(data=organdata, mapping = aes(x=reorder(country, donors, na.rm=TRUE), y=donors, color=world))
+
+p+geom_jitter()+labs(x=NULL) + coord_flip() +theme(legend.position="top")
+```
+
+A pertubação que o jitter provoca é um pouco exagerada para os nossos propósitos. Vamos controlar essas variações usando configurações de comprimento e largura. Como a nossa análise é unidimensional, só precisamos do comprimento.
+
+```{r}
+p <- ggplot(data=organdata, mapping = aes(x=reorder(country, donors, na.rm=TRUE), y=donors, color=world))
+
+p+geom_jitter(position=position_jitter(width=0.15))+labs(x=NULL) + coord_flip() +theme(legend.position="top")
+
+```
+
+
+Explicando:
+A função aes() é usada para definir as variáveis mapeadas aos eixos x e y do gráfico, x=reorder(country, donors, na.rm=TRUE) indica que a variável country será mapeada para o eixo x, reordenada com base na variável donors e removendo possíveis valores ausentes (na.rm=TRUE). y=donors define que a variável donors será mapeada para o eixo y. Além disso, color=world indica que a variável world será usada para colorir os pontos no gráfico.
+
+p + geom_jitter(position=position_jitter(width=0.15))
+Nesta linha, é adicionada uma camada (layer) de pontos jitter ao objeto p utilizando a função geom_jitter(). O argumento position=position_jitter(width=0.15) especifica que os pontos devem ser posicionados aleatoriamente, com uma largura de jitter de 0.15. Isso significa que os pontos serão levemente deslocados horizontalmente para evitar sobreposição total.
+
++ labs(x=NULL)
+Aqui, é adicionado um rótulo nulo para o eixo x do gráfico, utilizando a função labs() e definindo x=NULL. Isso significa que o rótulo do eixo x será removido do gráfico.
+
++ coord_flip()
+A função coord_flip() é utilizada para inverter a orientação dos eixos x e y. Isso resulta em um gráfico de dispersão horizontal, com os pontos dispostos horizontalmente.
+
++ theme(legend.position="top")
+Aqui, é aplicado um tema (theme) ao gráfico, definindo a posição da legenda como "top". Isso significa que a legenda será posicionada no topo do gráfico.
+
+Agora, queremos criar um gráfico que mostre o crescimento da taxa de doadores. Primeiro, precisamos preparar os dados:
+
+```{r}
+by_country <- organdata %>% group_by(consent_law, country) %>%
+  summarize(donors_mean=mean(donors, na.rm=TRUE),
+            donors_sd = sd(donors, na.rm=TRUE),
+            gdp_mean = mean(gdp, na.rm=TRUE),
+            health_mean=mean(health,na.rm=TRUE),
+            roads_mean = mean(roads, na.rm=TRUE),
+            cerebvas_mean = mean(cerebvas, na.rm=TRUE))
+
+```
+
+No código acima, está sendo criado um novo conjunto de dados chamado by_country, que contém informações resumidas por país e por tipo de legislação de consentimento (consent_law).
+
+%>% group_by(consent_law, country): A função group_by() é aplicada ao conjunto de dados organdata. Ela agrupa os dados pelo tipo de legislação de consentimento (consent_law) e pelo país (country). Isso significa que as operações de resumo serão aplicadas separadamente para cada combinação única desses dois fatores.
+
+summarize(donors_mean = mean(donors, na.rm = TRUE), donors_sd = sd(donors, na.rm = TRUE), gdp_mean = mean(gdp, na.rm = TRUE), health_mean = mean(health, na.rm = TRUE), roads_mean = mean(roads, na.rm = TRUE), cerebvas_mean = mean(cerebvas, na.rm = TRUE)): A função summarize() é aplicada ao conjunto de dados agrupado. Ela calcula várias estatísticas resumidas para as variáveis selecionadas. As estatísticas incluem a média (mean) dos doadores (donors_mean), o desvio padrão (sd) dos doadores (donors_sd), a média do PIB (gdp_mean), a média da saúde (health_mean), a média das estradas (roads_mean) e a média dos vasos cerebrais (cerebvas_mean). O argumento na.rm = TRUE é usado para remover os valores ausentes (missing values) ao calcular as estatísticas.
+
+Após a execução desse código, o objeto by_country será um novo conjunto de dados que contém os valores médios, desvio padrão e médias das variáveis selecionadas, agrupadas por tipo de legislação de consentimento e país.
+
+
+```{r}
+by_country
+```
+
+
+```{r}
+by_country <- organdata %>% group_by(consent_law, country) %>%
+  summarize_if(is.numeric, funs(mean,sd), na.rm=TRUE) %>%
+  ungroup()
+```
+
+O código acima cria um novo conjunto de dados chamado by_country a partir do conjunto de dados original organdata. O objetivo é agrupar os dados por tipo de legislação de consentimento (consent_law) e país (country), calcular estatísticas resumidas para as variáveis numéricas e, em seguida, remover o agrupamento.
+
+%>% group_by(consent_law, country): A função group_by() é aplicada ao conjunto de dados organdata. Ela agrupa os dados pelo tipo de legislação de consentimento (consent_law) e pelo país (country).
+
+summarize_if(is.numeric, funs(mean, sd), na.rm = TRUE): A função summarize_if() é aplicada ao conjunto de dados agrupado. Ela seleciona apenas as variáveis numéricas (utilizando is.numeric) e calcula as estatísticas resumidas para essas variáveis. Nesse caso, as estatísticas são a média (mean) e o desvio padrão (sd). O argumento na.rm = TRUE é usado para remover os valores ausentes (missing values) ao calcular as estatísticas.
+
+%>% ungroup(): A função ungroup() é aplicada ao conjunto de dados resultante. Ela remove o agrupamento que foi aplicado anteriormente, retornando o conjunto de dados sem agrupamento.
+
+Após a execução desse código, o objeto by_country será um novo conjunto de dados que contém as estatísticas resumidas (média e desvio padrão) para as variáveis numéricas, agrupadas por tipo de legislação de consentimento e país. O conjunto de dados não estará mais agrupado, permitindo a análise e a visualização dos resumos estatísticos para cada combinação de tipo de legislação de consentimento e país.
+
+Agora, podemos plotar o gráfico: 
+
+```{r}
+p <- ggplot(data=by_country, mapping=aes(x=donors_mean, y=reorder(country, donors_mean), color=consent_law))
+
+p+geom_point(size=3) + labs(x="Donor Procument Rate", y="", color = "Consent Law") + theme(legend.position="top")
+```
+
+Vamos facetar o gráfico ao invés de colorir:
+
+```{r}
+p<- ggplot(data=by_country, mapping=aes(x=donors_mean, y= reorder(country,donors_mean)))
+
+p+geom_point(size=3)+
+  facet_wrap(~consent_law, scales="free_y", ncol=1) + labs(x="Donor Procument Rate", y="")
+```
+
+Existe um geom chamado geom_dotplot(), mas ele é projetado para produzir um tipo diferente de figura. É uma espécie de histograma, com observações individuais representadas por pontos que são empilhados uns sobre os outros para mostrar quantos deles existem.
+
+Usando geom_pointrange(), podemos dizer ao ggplot para nos mostrar uma estimativa pontual e um intervalo em torno dela. Aqui usaremos o desvio padrão da taxa de doação que calculamos acima. Mas esta também é a forma natural de apresentar, por exemplo, estimativas de coeficientes de modelos com intervalos de confiança. Com geom_pointrange() mapeamos nossas variáveis x e y como de costume, mas a função precisa de um pouco mais de informação do que geom_point. Ele precisa saber o alcance da linha a ser desenhada em cada lado do ponto, definido pelos argumentos ymax e ymin. Isso é dado pelo valor y (donors_mean) mais ou menos seu desvio padrão (donors_sd). Se um argumento de função espera um número, não há problema em fornecer a ele uma expressão matemática que resolva o número desejado. R calculará o resultado para você.
+
+
+```{r}
+p<- ggplot(data=by_country, mapping=aes(x=reorder(country,donors_mean), y= donors_mean))
+
+p+geom_pointrange(mapping=aes(ymin=donors_mean - donors_sd, ymax= donors_mean + donors_sd))+ labs(x="", y="Donor Procument Rate") + coord_flip()
+
+```
+
+# Plotando os gráficos diretamente
+
+```{r}
+p <- ggplot(data=by_country, mapping=aes(x=roads_mean, y=donors_mean))
+p+geom_point() + geom_text(mapping=aes(label=country))
+```
+
+
+```{r}
+p <- ggplot(data=by_country, mapping =aes(x=roads_mean, y=donors_mean))
+p+geom_point() + geom_text(mapping=aes(label=country), hjust=0)
+```
+
+
+```{r}
+library(ggrepel)
+```
+
+
+```{r}
+elections_historic %>% select(2:7)
+```
+
+```{r}
+p_title <- "Presidential Elections: Popular & Electoral College Margins"
+p_subtitle <- "1824-2016"
+p_caption <- "Data for 2016 are provisional."
+
+```
+
+
+```{r}
+library(ggplot2)
+library(ggrepel)
+library(scales)
+
+x_label <- "Winner's share of Popular Vote"
+y_label <- "Winner's share of Electoral College Votes"
+
+p <- ggplot(elections_historic, aes(x = popular_pct, y = ec_pct, label = winner_label))
+
+p + geom_hline(yintercept = 0.5, size = 1.4, color = "gray80") +
+  geom_vline(xintercept = 0.5, size = 1.4, color = "gray80") +
+  geom_point() +
+  geom_text_repel() +
+  scale_x_continuous(labels = percent) +
+  scale_y_continuous(labels = percent) +
+  labs(x = x_label, y = y_label, title = p_title, subtitle = p_subtitle, caption = p_caption)
+
+```
+
+# Label Outliers
+
+```{r}
+p<-ggplot(data=by_country, mapping=aes(x=gdp_mean, y=health_mean))
+
+p+geom_point()+
+  geom_text_repel(data=subset(by_country, gdp_mean>25000), mapping = aes(label=country))
+
+p<-ggplot(data=by_country, mapping=aes(x=gdp_mean, y=health_mean))
+
+p+geom_point()+
+  geom_text_repel(data=subset(by_country, gdp_mean>25000 | health_mean <1500| country %in% "Belgium"), mappin = aes(label=country))
+```
+
+```{r}
+organdata$ind <- organdata$ccode %in% c("Ita","Spa") & organdata$year >1998
+
+p <- ggplot(data=organdata, mapping= aes(x=roads, y=donors, color=ind))
+
+p+geom_point()+ geom_text_repel(data=subset(organdata, ind), mapping = aes(label=ccode)) + guides(label=FALSE, color=FALSE)
+```
+
+
+```{r}
+p <- ggplot(data=organdata, mapping= aes(x=roads, y=donors))
+
+p+geom_point()+ annotate(geom="text", x=91, y=33, label="A surprisingly high \n recovery rate.", hjust=0)
+
+```
+
+
+```{r}
+p <- ggplot(data=organdata, mapping=aes(x=roads, y=donors))
+p+geom_point() + annotate(geom="rect", xmin=125,xmax=155, ymin=30, ymax=35, fill="red", alpha=0.2)+ annotate(geom="text", x=157, y=33, label = "A surprisingly high \n recovery rate.", hjust=0)
+```
+
+
+```{r}
+p<- ggplot(data=organdata, mapping=aes(x=roads, y=donors, color=world))
+p+geom_point()
+```
+
+```{r}
+p <- ggplot(data=organdata, mapping=aes(x=roads, y=donors, color=world))
+
+p+geom_point() + scale_x_log10() + scale_y_continuous(breaks=c(5,15,25), labels = c("Five", "Fifteen", "Twenty Five"))
+
+```
+
+
+```{r}
+p <- ggplot(data=organdata, mapping=aes(x=roads, y=donors, color=world))
+
+p+ geom_point()+scale_color_discrete(labels=c("Corporalist", "Liberal", "Social Democratic", "Unclassified")) + labs(x="Road Deaths", y="Donor Procurement", color= "Welfare State")
+```
+
+
+```{r}
+p <- ggplot(data=organdata, mapping=aes(x=roads, y=donors, color=world))
+
+p+ geom_point()+ labs(x="Road Deaths", y="Donor Procurement") + guides(color=FALSE)
+
+```
+
+
+```{r}
+gss_sm %>% group_by(race, degree) %>% summarize (N=n()) %>%
+  mutate(pct=round(N/sum(N)*100,0))
+
+```
+
+# Modificações autorais 
+
+```{r}
+elections_historic 
+```
+
+```{r}
+p <- ggplot(data = elections_historic, mapping = aes(x = reorder(winner, popular_pct), y = popular_pct))
+
+p + geom_pointrange(mapping = aes(ymin = popular_margin, ymax = popular_margin, color = winner)) +
+  labs(x = "", y = "Popularidade")  + coord_flip()
+```
+
+```{r}
+p <- ggplot(data = by_country, mapping = aes(x = reorder(country, donors_mean), y = donors_mean))
+
+p + geom_pointrange(mapping = aes(ymin = donors_mean - donors_sd, ymax = donors_mean + donors_sd, color = country)) +
+  labs(x = "", y = "Donor Procurement Rate") + coord_flip()
+
+```

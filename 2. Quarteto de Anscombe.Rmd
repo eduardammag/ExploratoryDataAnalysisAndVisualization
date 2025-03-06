@@ -1,0 +1,193 @@
+---
+title: "QUARTETO DE ANSCOMBE - Análises"
+author: "Maria Eduarda Mesquita Magalhães"
+date: "2023-05-07"
+output: 
+  html_document:
+    number_sections: yes
+    highlight: tango
+    theme: cerulean
+    toc: yes
+    toc_float:
+      collapsed: yes
+      smmoth_scroll: no
+  pdf_document:
+    toc: yes
+---
+# O que é o Quarteto de Anscombe?
+
+Criado pelo estatístico britânico Francis Anscombe, o quarteto de anscombe é um conjunto de quatro grupos de dados que possuem as mesmas propriedades estatísticas descritivas (como média, desvio padrão e correlação), mas apresentam padrões completamente diferentes quando visualizados graficamente. 
+
+Esses conjuntos de dados foram criados para enfatizar a importância da visualização de dados na análise estatística e para alertar sobre a confiança excessiva em resumos numéricos sem a devida investigação dos padrões de dados subjacentes.
+
+### Quem foi Francis Anscombe?
+
+Nascido em 1918, foi um estatístico nascido em Hove, Inglaterra. Ele fez contribuições significativas em diversas áreas da estatística, incluindo análise de variância, regressão, análise de séries temporais e estatística computacional.
+
+Foi mundialmente reconhecido pela criação do quarteto que leva o seu nome. Anscombe trabalhou como professor na Universidade de Cambridge e na Universidade de Princeton e foi presidente da Sociedade de Estatística Real de 1973 a 1975. Ele foi um dos primeiros usuários do computador na estatística, desenvolvendo métodos para análise estatística e simulação por computador.Faleceu em 2001 deixando um grande legado para o estudo da estatística.
+
+# Importando a biblioteca
+
+```{r}
+library(ggplot2)
+```
+
+# Importando o conjunto de dados
+```{r} 
+anscombe
+```
+
+# Visualizando uma amostra do conjunto de dados
+```{r}
+head(anscombe)
+```
+
+# Visualizando o resumo descritivo dos conjuntos em estudo
+```{r}
+summary(anscombe)
+```
+
+## Média dos conjuntos em estudo
+
+```{r}
+mean(anscombe$x1)
+mean(anscombe$x2)
+mean(anscombe$x3)
+mean(anscombe$x4)
+mean(anscombe$y1)
+mean(anscombe$y2)
+mean(anscombe$y3)
+mean(anscombe$y4)
+```
+
+## Mediana dos conjuntos em estudo
+
+```{r}
+median(anscombe$x1)
+median(anscombe$x2)
+median(anscombe$x3)
+median(anscombe$x4)
+median(anscombe$y1)
+median(anscombe$y2)
+median(anscombe$y3)
+median(anscombe$y4)
+
+```
+
+## Desvio padrão dos conjuntos em estudo
+
+```{r}
+sd(anscombe$x1)
+sd(anscombe$x2)
+sd(anscombe$x3)
+sd(anscombe$x4)
+sd(anscombe$y1)
+sd(anscombe$y2)
+sd(anscombe$y3)
+sd(anscombe$y4)
+```
+
+# Gráficos
+O argumento aes(x = ..., y = ...), define as variáveis que serão plotadas no eixo x e y, respectivamente. A função geom_point() adiciona os pontos ao gráfico e ggtitle() define o título do gráfico.
+
+
+## Gráfico 1 
+```{r message=FALSE, warning=FALSE}
+ggplot(anscombe, aes(x = x1, y = y1)) +
+  geom_point() +
+  ggtitle("Gráfico 1")
+
+
+```
+
+## Gráfico 2
+
+```{r}
+ggplot(anscombe, aes(x = x2, y = y2)) +
+  geom_point() +
+  ggtitle("Gráfico 2")
+```
+
+
+## Gráfico 3
+```{r}
+ggplot(anscombe, aes(x = x3, y = y3)) +
+  geom_point() +
+  ggtitle("Gráfico 3")
+
+```
+
+## Gráfico 4
+```{r}
+
+ggplot(anscombe, aes(x = x4, y = y4)) +
+  geom_point() +
+  ggtitle("Gráfico 4")
+
+```
+
+```{r}
+library(gridExtra)
+
+# Gráfico 1
+p1 <- ggplot(anscombe, aes(x = x1, y = y1)) +
+  geom_point() +
+  ggtitle("Gráfico 1")
+
+# Gráfico 2
+p2 <- ggplot(anscombe, aes(x = x2, y = y2)) +
+  geom_point() +
+  ggtitle("Gráfico 2")
+
+# Gráfico 3
+p3 <- ggplot(anscombe, aes(x = x3, y = y3)) +
+  geom_point() +
+  ggtitle("Gráfico 3")
+
+# Gráfico 4
+p4 <- ggplot(anscombe, aes(x = x4, y = y4)) +
+  geom_point() +
+  ggtitle("Gráfico 4")
+
+# Organiza os quatro gráficos em uma matriz 2x2
+grid.arrange(p1, p2, p3, p4, ncol = 2)
+
+```
+
+# Linha de tendência 
+```{r message=FALSE, warning=FALSE}
+
+library(stringi)
+
+ggplot(anscombe, aes(x = x1, y = y1)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  ggtitle(stri_encode("Gráfico 1 com linha de tendência", "UTF-8"))
+
+ggplot(anscombe, aes(x = x2, y = y2)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  ggtitle(stri_encode("Gráfico 2 com linha de tendência", "UTF-8"))
+
+ggplot(anscombe, aes(x = x3, y = y3)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  ggtitle(stri_encode("Gráfico 3 com linha de tendência", "UTF-8"))
+
+ggplot(anscombe, aes(x = x4, y = y4)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  ggtitle(stri_encode("Gráfico 4 com linha de tendência", "UTF-8"))
+
+
+```
+
+```{r message=FALSE, warning=FALSE}
+a <- p1 + geom_smooth(method = "lm", se = FALSE) + ggtitle(stri_encode("Gráfico 1 com linha de tendência", "UTF-8"))
+b <- p2 + geom_smooth(method = "lm", se = FALSE) + ggtitle(stri_encode("Gráfico 2 com linha de tendência", "UTF-8"))
+c <- p3 + geom_smooth(method = "lm", se = FALSE) + ggtitle(stri_encode("Gráfico 3 com linha de tendência", "UTF-8"))
+d <- p4 + geom_smooth(method = "lm", se = FALSE) + ggtitle(stri_encode("Gráfico 4 com linha de tendência", "UTF-8"))
+
+grid.arrange(a,b,c,d, ncol = 2)
+
+```

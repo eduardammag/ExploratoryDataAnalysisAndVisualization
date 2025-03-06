@@ -1,0 +1,405 @@
+---
+title: "Gráfico histórico"
+author: "Maria Eduarda Mesquita Magalhães"
+date: "2023-05-11"
+output: 
+  html_document:
+    number_sections: yes
+    highlight: tango
+    theme: readable
+    toc: yes
+    toc_float:
+      collapsed: yes
+      smmoth_scroll: no
+  pdf_document:
+    toc: yes
+---
+
+# INTRODUÇÃO
+Reproduziremos um código que utiliza pacotes do R e arquivos de dados relacionados à visualização de Charles Minard da campanha russa de Napoleão. Os pacotes carregados serão:
+
+tidyverse: utilizados para manipulação, visualização e análise de dados.
+lubridate: trabalha com datas e horários no R.
+ggmap: permite obter dados de mapas de várias fontes e sobrepor dados a mapas usando ggplot2.
+ggrepel: adiciona rótulos de texto a gráficos de forma a evitar sobreposição.
+gridExtra: um pacote para organizar múltiplos gráficos em uma única página.
+pander: um pacote para renderizar data frames em formato Markdown ou HTML.
+
+# ESTRUTURA BASILAR
+
+ - Carregando os dados necessários para a construção gráfica
+ 
+```{r message=FALSE, warning=FALSE}
+
+library(tidyverse)
+library(lubridate)
+library(ggmap)
+library(ggrepel)
+library(gridExtra)
+library(pander)
+
+cities <- read.table("C:/Users/Cris/Documents/Asla/cities.txt",
+                     header = TRUE, stringsAsFactors = FALSE)
+
+troops <- read.table("C:/Users/Cris/Documents/Asla/troops.txt",
+                     header = TRUE, stringsAsFactors = FALSE)
+
+temps <- read.table("C:/Users/Cris/Documents/Asla/temps.txt",
+                    header = TRUE, stringsAsFactors = FALSE) %>%
+  mutate(date = dmy(date))  # Convert string to actual date
+```
+ 
+> O comando read.table lê o conteúdo de cada arquivo de texto especificado e criam um data frame em R. 
+O argumento header = TRUE especifica que a primeira linha de cada arquivo contém os nomes das colunas. 
+O argumento stringsAsFactors = FALSE especifica que as colunas de caracteres devem ser lidas como strings em vez de fatores.
+
+O arquivo cities.txt informa sobre as cidades e vilas ao longo da rota de Napoleão.
+O arquivo troops.txt detalha o tamanho do exército de Napoleão em vários pontos da rota. 
+O arquivo temps.txt se refere à temperatura em vários pontos da rota, bem como a data de registro dela.  registrada.
+
+> O comando %>% (pipe) é utilizado para encadear a operação mutate no data frame temps. 
+O comando mutate adiciona uma nova coluna chamada date ao data frame temps. 
+O comando dmy converte a coluna date de uma string de caracteres para um objeto de data real no formato dia-mês-ano usando a função do pacote lubridate. 
+ 
+```{r message=FALSE, warning=FALSE}
+ggplot(troops, aes(x = long, y = lat, group = group)) +
+  geom_path()
+```
+
+> troops é o dataframe que contém as informações a serem plotadas no gráfico.
+aes() é a função que define os mapeamentos estéticos do gráfico (aesthetics mappings). 
+x = long e y = lat definem as coordenadas geográficas que serão plotadas no gráfico, enquanto group = group define o agrupamento para a função geom_path()
+
+geom_path() cria um gráfico de linha conectando as coordenadas definidas em aes(). O argumento group = group especifica que as coordenadas devem ser agrupadas pelo valor da coluna group no dataframe troops, ou seja, ela é mapeada como grupo para conectar as linhas geográficas.
+
+```{r message=FALSE, warning=FALSE}
+ggplot(troops, aes(x = long, y = lat, group = group,
+                   color = direction, size = survivors)) +
+  geom_path()
+```
+
+As cores das linhas são definidas pela variável direction, enquanto o tamanho da linha é definido pela variável survivors.
+
+Perceba que Os segmentos individuais do caminho não se encaixam muito bem e deixam grandes lacunas. Podemos corrigir isso adicionando uma linha arredondada ao final de cada segmento.
+
+```{r message=FALSE, warning=FALSE}
+ggplot(troops, aes(x = long, y = lat, group = group,
+                   color = direction, size = survivors)) +
+  geom_path(lineend = "round")
+```
+
+Podemos ajustar a escala para permitir mais categorias, mostrando assim mais variação de tamanho e destacando a devastação do exército:
+
+```{r message=FALSE, warning=FALSE}
+ggplot(troops, aes(x = long, y = lat, group = group,
+                   color = direction, size = survivors)) +
+  geom_path(lineend = "round") +
+  scale_size(range = c(0.5, 15))
+```
+
+scale_size(range = c(0.5, 15)): Ajusta a escala de tamanho das linhas. range = c(0.5, 15) define que as linhas devem variar em tamanho entre 0.5 e 15, sendo 0.5 o menor tamanho possível e 15 o maior tamanho possível.
+
+- Agora, vamos adicionar cores específicas:
+
+```{r message=FALSE, warning=FALSE}
+ggplot(troops, aes(x = long, y = lat, group = group,
+                   color = direction, size = survivors)) +
+  geom_path(lineend = "round") +
+  scale_size(range = c(0.5, 15)) +
+  scale_colour_manual(values = c("#DFC17E", "#252523")) +
+  labs(x = NULL, y = NULL) +
+  guides(color = FALSE, size = FALSE)
+```
+
+Nesse sentido,  podemos sobrepor detalhes geográficos. As cidades nos dados originais podem ser facilmente adicionadas com geom_point()e geom_text(). Usamos vjustin geom_text()para mover os rótulos para longe de seus pontos.
+
+```{r message=FALSE, warning=FALSE}
+ggplot() +
+  geom_path(data = troops, aes(x = long, y = lat, group = group,
+                               color = direction, size = survivors),
+            lineend = "round") +
+  geom_point(data = cities, aes(x = long, y = lat)) +
+  geom_text(data = cities, aes(x = long, y = lat, label = city), vjust = 1.5) +
+  scale_size(range = c(0.5, 15)) +
+  scale_colour_manual(values = c("#DFC17E", "#252523")) +
+  labs(x = NULL, y = NULL) +
+  guides(color = FALSE, size = FALSE)
+```
+
+- Para garantir que nenhum dos rótulos das cidades se sobreponham:
+
+```{r message=FALSE, warning=FALSE}
+ggplot() +
+  geom_path(data = troops, aes(x = long, y = lat, group = group,
+                               color = direction, size = survivors),
+            lineend = "round") +
+  geom_point(data = cities, aes(x = long, y = lat),
+             color = "#DC5B44") +
+  geom_text_repel(data = cities, aes(x = long, y = lat, label = city),
+                  color = "#DC5B44", family = "Open Sans Condensed Bold") +
+  scale_size(range = c(0.5, 15)) +
+  scale_colour_manual(values = c("#DFC17E", "#252523")) +
+  labs(x = NULL, y = NULL) +
+  guides(color = FALSE, size = FALSE)
+
+
+```
+
+-  Obtendo blocos de mapas a partir do Stamen
+```{r message=FALSE, warning=FALSE}
+march.1812.europe <- c(left = -13.10, bottom = 35.75, right = 41.04, top = 61.86)
+
+# "zoom" ranges from 3 (continent) to 21 (building)
+# "where" is a path to a folder where the downloaded tiles are cached
+march.1812.europe.map <- get_stamenmap(bbox = march.1812.europe, zoom = 5,
+                                       maptype = "terrain", where = "cache")
+
+ggmap(march.1812.europe.map)
+```
+ 
+Podemos até usar os tipos de mapa mais sofisticados de Stamen, como aquarela:
+
+```{r message=FALSE, warning=FALSE}
+march.1812.europe.map.wc <- get_stamenmap(bbox = march.1812.europe, zoom = 5,
+                                          maptype = "watercolor", where = "cache")
+ggmap(march.1812.europe.map.wc)
+```
+
+- Sobrepondo o gráfico de Minard para ver onde a marcha ocorreu em relação ao resto da Europa:
+
+```{r message=FALSE, warning=FALSE}
+ggmap(march.1812.europe.map.wc) +
+  geom_path(data = troops, aes(x = long, y = lat, group = group,
+                               color = direction, size = survivors),
+            lineend = "round") +
+  scale_size(range = c(0.5, 5)) +
+  scale_colour_manual(values = c("#DFC17E", "#252523")) +
+  guides(color = FALSE, size = FALSE) +
+  theme_nothing()  # This is a special theme that comes with ggmap
+```
+
+- Ampliando apenas o nordeste da Europa e adicionando as cidades novamente.
+
+```{r message=FALSE, warning=FALSE}
+march.1812.ne.europe <- c(left = 23.5, bottom = 53.4, right = 38.1, top = 56.3)
+
+march.1812.ne.europe.map <- get_stamenmap(bbox = march.1812.ne.europe, zoom = 8,
+                                          maptype = "terrain-background", where = "cache")
+
+march.1812.plot <- ggmap(march.1812.ne.europe.map) +
+  geom_path(data = troops, aes(x = long, y = lat, group = group,
+                               color = direction, size = survivors),
+            lineend = "round") +
+  geom_point(data = cities, aes(x = long, y = lat),
+             color = "#DC5B44") +
+  geom_text_repel(data = cities, aes(x = long, y = lat, label = city),
+                  color = "#DC5B44", family = "Open Sans Condensed Bold") +
+  scale_size(range = c(0.5, 10)) +
+  scale_colour_manual(values = c("#DFC17E", "#252523")) +
+  guides(color = FALSE, size = FALSE) +
+  theme_nothing()
+
+march.1812.plot
+```
+
+Salvaremos esse gráfico em um objeto ( march.1812.plot) para que possamos usá-lo mais tarde.
+
+# TEMPERATURA E TEMPO
+Até agora, temos quatro das variáveis do gráfico original de Minard - ainda não temos as temperaturas durante o retiro e os dias do retiro. Minard colocou esta informação em um gráfico separado sob o mapa, o que é fácil de fazer usando gridExtra.
+
+Primeiro temos que criar o painel, que é um gráfico de linha básico com longitude ao longo do eixo x e temperatura ao longo do eixo y, com texto adicionado em cada ponto.
+
+```{r message=FALSE, warning=FALSE}
+ggplot(data = temps, aes(x = long, y = temp)) +
+  geom_line() +
+  geom_text(aes(label = temp), vjust = 1.5)
+
+```
+
+Podemos criar uma nova variável, combinando a temperatura com a data. Também moveremos o rótulo do eixo para a direita e incluiremos apenas as principais linhas de grade horizontais. Quando sobrepomos os dois gráficos, temos que garantir que os eixos x estejam alinhados, então precisamos usar os mesmos limites do eixo x usados em march.1812.plot. Esses limites podem ser acessados com ggplot_build():
+
+```{r message=FALSE, warning=FALSE}
+ggplot_build(march.1812.plot)$layout$panel_ranges[[1]]$x.range
+
+temps.nice <- temps %>%
+  mutate(nice.label = paste0(temp, "°, ", month, ". ", day))
+
+temps.1812.plot <- ggplot(data = temps.nice, aes(x = long, y = temp)) +
+  geom_line() +
+  geom_label(aes(label = nice.label),
+            family = "Open Sans Condensed Bold", size = 2.5) +
+  labs(x = NULL, y = "° Celsius") +
+  scale_x_continuous(limits = ggplot_build(march.1812.plot)$layout$panel_ranges[[1]]$x.range) +
+  scale_y_continuous(position = "right") +
+  coord_cartesian(ylim = c(-35, 5)) +  # Add some space above/below
+  theme_bw(base_family = "Open Sans Condensed Light") +
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        axis.text.x = element_blank(), axis.ticks = element_blank(),
+        panel.border = element_blank())
+
+temps.1812.plot
+```
+
+# COMBINANDO AS PARCELAS
+
+Finalmente, usamos funções in gridExtra para combinar os dois gráficos. A maneira mais fácil de combinar objetos de plotagem gridExtraé usar grid.arrange(), mas isso não alinha os eixos da plotagem. 
+
+Por exemplo, observe estes dois gráficos de exemplo - eles não são mais comparáveis verticalmente porque o lado esquerdo do gráfico inferior se estende até a borda do gráfico, expandindo-se sob o rótulo do eixo longo no gráfico superior:
+
+```{r message=FALSE, warning=FALSE}
+example.data <- data_frame(x = 1:10, y = rnorm(10))
+
+plot1 <- ggplot(example.data, aes(x = x, y = y)) +
+  geom_line() +
+  labs(y = "This is a really\nreally really really\nreally tall label")
+
+plot2 <- ggplot(example.data, aes(x = x, y = y)) +
+  geom_line() +
+  labs(y = NULL)
+
+grid.arrange(plot1, plot2)
+```
+
+Em vez de usar grid.arrange, podemos usar gridExtraa versão especial de rbind()(ou cbind()) para ggplotGrobobjetos:
+
+```{r message=FALSE, warning=FALSE}
+
+plot.both <- rbind(ggplotGrob(plot1), ggplotGrob(plot2))
+
+grid::grid.newpage()
+grid::grid.draw(plot.both)
+
+```
+
+Agora que podemos alinhar as parcelas corretamente, podemos combinar o mapa e a temperatura:
+
+```{r message=FALSE, warning=FALSE}
+both.1812.plot <- rbind(ggplotGrob(march.1812.plot),
+                        ggplotGrob(temps.1812.plot))
+
+grid::grid.newpage()
+grid::grid.draw(both.1812.plot)
+```
+
+Eles estão alinhados, mas há um problema óbvio - o mapa é muito pequeno e as temperaturas muito altas. Com grid.arrangeele é possível passar um vetor de alturas relativas do painel, o que nos permitiria encolher o painel inferior. Embora o uso gtable::rbind()nos permita alinhar os dois gráficos, ele não fornece uma maneira fácil de mexer com as alturas do painel. Entretanto, podemos mexer com o objeto ggplot e ajustar os painéis manualmente.
+
+```{r message=FALSE, warning=FALSE}
+panels <- both.1812.plot$layout$t[grep("panel", both.1812.plot$layout$name)]
+map.panel.height <- both.1812.plot$heights[panels][1]
+map.panel.height
+
+```
+
+Agora temos que extrair o valor numérico de map.panel.height antes de passá-lo para unit. Como map.panel.height contém apenas um valor, faremos assim:
+
+```{r message=TRUE, warning=FALSE}
+both.1812.plot$heights[panels] <- unit(c(as.numeric(map.panel.height), 0.1), "null")
+
+
+grid::grid.newpage()
+grid::grid.draw(both.1812.plot)
+
+```
+
+Podemos seguir o mesmo processo para criar uma versão sem fundo do mapa:
+
+```{r message=FALSE, warning=FALSE}
+# No map this time
+march.1812.plot.simple <- ggplot() +
+  geom_path(data = troops, aes(x = long, y = lat, group = group,
+                               color = direction, size = survivors),
+            lineend = "round") +
+  geom_point(data = cities, aes(x = long, y = lat),
+             color = "#DC5B44") +
+  geom_text_repel(data = cities, aes(x = long, y = lat, label = city),
+                  color = "#DC5B44", family = "Open Sans Condensed Bold") +
+  scale_size(range = c(0.5, 10)) +
+  scale_colour_manual(values = c("#DFC17E", "#252523")) +
+  guides(color = FALSE, size = FALSE) +
+  theme_nothing()
+
+# Change the x-axis limits to match the simple map
+temps.1812.plot <- ggplot(data = temps.nice, aes(x = long, y = temp)) +
+  geom_line() +
+  geom_label(aes(label = nice.label),
+            family = "Open Sans Condensed Bold", size = 2.5) +
+  labs(x = NULL, y = "° Celsius") +
+  scale_x_continuous(limits = ggplot_build(march.1812.plot.simple)$layout$panel_ranges[[1]]$x.range) +
+  scale_y_continuous(position = "right") +
+  coord_cartesian(ylim = c(-35, 5)) +  # Add some space above/below
+  theme_bw(base_family = "Open Sans Condensed Light") +
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        axis.text.x = element_blank(), axis.ticks = element_blank(),
+        panel.border = element_blank())
+
+# Combine the two plots
+both.1812.plot.simple <- rbind(ggplotGrob(march.1812.plot.simple),
+                               ggplotGrob(temps.1812.plot))
+
+# Adjust panels
+panels <- both.1812.plot.simple$layout$t[grep("panel", both.1812.plot.simple$layout$name)]
+
+# Because this plot doesn't use coord_equal, since it's not a map, we can use
+# whatever relative numbers we want, like a 3:1 ratio
+both.1812.plot.simple$heights[panels] <- unit(c(3, 1), "null")
+
+grid::grid.newpage()
+grid::grid.draw(both.1812.plot.simple)
+```
+
+# MODIFICAÇÕES AUTORAIS
+
+- Usando cores citadas no capítulo 8 do livro "Data Visualization"
+
+```{r message=FALSE, warning=FALSE}
+# No map this time
+march.1812.plot.simple <- ggplot() +
+  geom_path(data = troops, aes(x = long, y = lat, group = group,
+                               color = direction, size = survivors),
+            lineend = "round") +
+  geom_point(data = cities, aes(x = long, y = lat),
+             color = "#4B0082") +
+  geom_text_repel(data = cities, aes(x = long, y = lat, label = city),
+                  color = "#F55649", family = "Open Sans Condensed Bold") +
+  scale_size(range = c(0.5, 10)) +
+  scale_colour_manual(values = c("#F29494", "#9C9CCB")) +
+  guides(color = FALSE, size = FALSE) +
+  theme_nothing()
+
+# Change the x-axis limits to match the simple map
+temps.1812.plot <- ggplot(data = temps.nice, aes(x = long, y = temp)) +
+  geom_line() +
+  geom_label(aes(label = nice.label),
+            family = "Open Sans Condensed Bold", size = 2.5) +
+  labs(x = NULL, y = "° Celsius") +
+  scale_x_continuous(limits = ggplot_build(march.1812.plot.simple)$layout$panel_ranges[[1]]$x.range) +
+  scale_y_continuous(position = "right") +
+  coord_cartesian(ylim = c(-35, 5)) +  # Add some space above/below
+  theme_bw(base_family = "Open Sans Condensed Light") +
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        axis.text.x = element_blank(), axis.ticks = element_blank(),
+        panel.border = element_blank())
+
+# Combine the two plots
+both.1812.plot.simple <- rbind(ggplotGrob(march.1812.plot.simple),
+                               ggplotGrob(temps.1812.plot))
+
+# Adjust panels
+panels <- both.1812.plot.simple$layout$t[grep("panel", both.1812.plot.simple$layout$name)]
+
+# Because this plot doesn't use coord_equal, since it's not a map, we can use
+# whatever relative numbers we want, like a 3:1 ratio
+both.1812.plot.simple$heights[panels] <- unit(c(3, 1), "null")
+
+grid::grid.newpage()
+grid::grid.draw(both.1812.plot.simple)
+
+
+
+```
